@@ -19,15 +19,12 @@ class CLI(cmd.Cmd):
                 print("Creating new database")
                 database = Database()
 
-
-        print(database)
-
         self.database = database
 
-        self.do_add("test1 1")
-        self.do_add("test2 2")
-        self.do_add("test3 3")
-        self.do_add("test4 4")
+
+    def update_pickle(self, database):
+        with open(SAVE_PATH, 'wb') as file:
+            pickle.dump(database, file)
 
     def do_add(self, line):
         """
@@ -40,12 +37,24 @@ class CLI(cmd.Cmd):
             pass
 
         self.database.add(values[0], values[1])
-        with open(SAVE_PATH, 'wb') as file:
-            pickle.dump(self.database, file)
+        self.update_pickle(self.database)
+
+    def do_delete(self, line):
+        """
+        Delete one element from the database
+        Use syntax: delete <key>
+        """
+        if len(line.split(" ")) > 1:
+            print("Please only pass one key to the delete method!")
+            pass
+        self.database.delete(line)
+        self.update_pickle(self.database)
 
 
     def do_show(self, line):
-        """"""
+        """
+        Display the entire database
+        """
 
         values = self.database.get_all()
         print("----- DATABASE -----")
@@ -53,17 +62,40 @@ class CLI(cmd.Cmd):
             print(str(e[0]) + " --> " + str(e[1]))
         print("--------------------")
 
+    def do_get(self, line):
+        """
+        Get one element from database based on key.
+        Use synax: get <key>
+        """
+        if len(line.split(" ")) > 1:
+            print("Please only pass one key to the get method!")
+            pass
+
+        print(self.database.get(line))
+
+
+    def do_clear(self, line):
+        """
+        Simple command to clear the screen
+        """
+        os.system('cls')
 
     def do_ping(self, line):
-        """Play ping pong with my database! Very useful method!"""
+        """
+        Play ping pong with my database! Very useful method!
+        """
         print("pong!", line)
 
     def do_exit(self, line):
-        """Exit the CLI."""
+        """
+        Exit the CLI.
+        """
         return True
 
     def do_quit(self, line):
-        """Exit the CLI. But with quit instead of exit! Wooooow"""
+        """
+        Exit the CLI. But with quit instead of exit! Wooooow
+        """
         return True
 
 class Database(object):
@@ -71,8 +103,10 @@ class Database(object):
         self.array = [None] * length
     
     def hash(self, key):
-        length = len(self.array)
-        return hash(key) % length
+        hash_value = 0
+        for char in key:
+            hash_value = (hash_value * 31 + ord(char)) % len(self.array)
+        return hash_value
         
     def add(self, key, value):
         index = self.hash(key)
@@ -80,17 +114,22 @@ class Database(object):
             for kvp in self.array[index]:
                 if kvp[0] == key:
                     kvp[1] = value
-                    print("breaking ", key, kvp[0])
+                    print("Updating key: ", kvp[0])
                     break
             else:
+                print(f"Adding value {key} --> {value}")
                 self.array[index].append([key, value])
-                print("Adding1: " + str(key) + " --> " + str(value) + " to the database")
-
         else:
+            print(f"Adding value {key} --> {value}")
             self.array[index] = []
             self.array[index].append([key, value])
-            print("Adding2: " + str(key) + " --> " + str(value) + " to the database")
     
+    def delete(self, key):
+        index = self.hash(key)
+        if self.array[index] is not None:
+            print(f"Deleting key: {key}")
+            self.array[index] = []
+
     def get(self, key):
         index = self.hash(key)
         if self.array[index] is None:
@@ -99,12 +138,10 @@ class Database(object):
             for kvp in self.array[index]:
                 if kvp[0] == key:
                     return kvp[1]
-            
             raise KeyError()
     
     def get_all(self):
         return_arr = []
-        print(self.array)
         for kvp in self.array:
             if kvp:
                 if len(kvp) == 1:
@@ -112,28 +149,8 @@ class Database(object):
                 if len(kvp) > 1:
                     for e in kvp:
                         return_arr.append([e[0], e[1]])
-            else:
-                print("REST: ", kvp)
         return return_arr 
 
 if __name__ == "__main__":
 
-
-    table = Database()
-
     CLI().cmdloop()
-
-    # table.add("test1", 1)
-    # table.add("test2", 2)
-    # table.add("test3", 3)
-    # table.add("test4", 4)
-    # table.add("test5", 5)
-    # table.add("test6", 6)
-    # table.add("test7", 7)
-    # table.add("test8", "Hejsan svejsan!")
-    # table.add("test9", 9)
-
-    # print(table.get("test4"))
-    # print(table.get("test1"))
-    # print(table.get("test3"))
-    # print(table.get("test2"))
